@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Singapore haze monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F9F4; --surface:#FFFFFF; --ink:#16261C; --muted:#5B6F61; --line:#E0EBE1;
+  --brand:#8ED7A0; --brand-ink:#1E6B3B; --brand-soft:#E6F5E9;
+  --water:#EDF5F9; --island:#DDEFDF; --island-line:#A9D1B0;
+  --shadow:0 1px 2px rgba(22,38,28,.05);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1611; --surface:#151F18; --ink:#E7F1E9; --muted:#9BB1A1; --line:#233227;
+    --brand:#8ED7A0; --brand-ink:#8ED7A0; --brand-soft:#1B2E21;
+    --water:#101D24; --island:#223A2A; --island-line:#3C6A49;
+    --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1611; --surface:#151F18; --ink:#E7F1E9; --muted:#9BB1A1; --line:#233227;
+  --brand:#8ED7A0; --brand-ink:#8ED7A0; --brand-soft:#1B2E21;
+  --water:#101D24; --island:#223A2A; --island-line:#3C6A49;
+  --shadow:none; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 20px 40px}
+header.top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:40px;height:40px;border-radius:12px;background:var(--brand);display:grid;place-items:center;color:#14391F}
+h1{font-size:22px;line-height:1.2;margin:0;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+.src{display:inline-flex;align-items:center;gap:8px;background:var(--brand-soft);color:var(--brand-ink);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:600}
+:focus-visible{outline:2px solid var(--brand-ink);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.pad{padding:18px}
+h2{font-size:15px;font-weight:600;margin:0}
+.muted{color:var(--muted)}
+
+.status{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr);gap:20px;padding:20px;margin-bottom:16px;align-items:center}
+.psi-main{display:flex;gap:18px;align-items:center}
+.ring-big{flex:none;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;font-size:36px;font-weight:700;letter-spacing:-.02em}
+.psi-main h2{font-size:18px;margin-bottom:4px}
+.psi-main p{margin:0;color:var(--muted);font-size:14px;max-width:46ch}
+.psi-main .meta{font-size:12px;margin-top:6px}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.stat{background:var(--bg);border-radius:12px;padding:12px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-size:18px;font-weight:600;margin-top:2px;letter-spacing:-.01em}
+.stat .u{font-size:12px;color:var(--muted);font-weight:400}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.map-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:13px;cursor:pointer;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--brand-soft);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+.map-scroll{overflow-x:auto}
+#map{display:block;width:100%;min-width:720px;height:auto;background:var(--water)}
+.mk{cursor:pointer}
+.mk .dot{stroke:var(--surface);stroke-width:2.5}
+.mk:hover .dot{stroke:var(--ink)}
+.mk:focus{outline:none}
+.mk:focus-visible .dot{stroke:var(--ink);stroke-width:3.5}
+.mk .val{font-weight:700;text-anchor:middle;pointer-events:none}
+.mk .nm{font-weight:600;text-anchor:middle;fill:var(--ink);stroke:var(--island);stroke-width:4px;paint-order:stroke;pointer-events:none}
+.mk .ring{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-dasharray:4 4}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;padding:12px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+.legend b{font-weight:600;color:var(--ink);margin-right:4px}
+.layer-note{padding:0 18px 14px;font-size:12px;color:var(--muted)}
+
+.detail h2{font-size:20px}
+.detail .where{color:var(--muted);font-size:13px;margin-bottom:6px}
+.detail-top{display:flex;align-items:center;gap:14px;margin:10px 0 14px}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:600}
+.big{font-size:44px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.advice{background:var(--bg);border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:14px}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.m{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.m .k{font-size:12px;color:var(--muted)}
+.m .v{font-size:17px;font-weight:600}
+.m .u{font-size:12px;color:var(--muted);font-weight:400}
+.m .s{font-size:11px;color:var(--muted)}
+.fine{font-size:12px;color:var(--muted);margin-top:12px}
+
+.regions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.region{text-align:left;padding:14px 16px;cursor:pointer;display:block;width:100%}
+.region[aria-pressed="true"]{border-color:var(--brand-ink);box-shadow:0 0 0 1px var(--brand-ink)}
+.region .rn{font-size:13px;color:var(--muted)}
+.region .rv{font-size:28px;font-weight:700;letter-spacing:-.02em;margin:4px 0 2px}
+.region .rb{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.region .rm{font-size:12px;color:var(--muted);margin-top:8px}
+.dotc{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+.two{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.two h2{margin-bottom:12px}
+.fc-row{display:grid;grid-template-columns:76px 28px 1fr;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.fc-row:last-child{border-bottom:0}
+.fc-row svg{width:26px;height:26px;stroke:var(--brand-ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.fc-d{font-weight:600}
+.fc-s{color:var(--muted);font-size:12px}
+.srcs{width:100%;border-collapse:collapse;font-size:13px}
+.srcs td{padding:8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.srcs tr:last-child td{border-bottom:0}
+.srcs td:last-child{text-align:right;color:var(--muted);white-space:nowrap;padding-left:12px}
+
+.table-wrap{overflow-x:auto}
+table.data{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+table.data th,table.data td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.data th{font-size:12px;font-weight:600;color:var(--muted);background:var(--bg)}
+table.data tbody tr:last-child td{border-bottom:0}
+table.data tbody tr[aria-selected="true"]{background:var(--brand-soft)}
+table.data td button{background:none;border:0;padding:0;font-weight:600;cursor:pointer;color:var(--ink);text-align:left}
+table.data td button:hover{text-decoration:underline}
+.tbl-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap}
+.stack{display:grid;gap:16px;margin-bottom:16px}
+.foot{color:var(--muted);font-size:12px;margin-top:16px;max-width:90ch}
+
+
+.tabs{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tab{border:0;background:var(--surface);padding:7px 16px;font-size:13px;cursor:pointer;color:var(--muted)}
+.tab+.tab{border-left:1px solid var(--line)}
+.tab[aria-selected="true"]{background:var(--brand);color:#14391F;font-weight:700}
+.pill{cursor:pointer}
+.pill:focus{outline:none}
+.pill:focus-visible rect{stroke:var(--ink);stroke-width:3}
+.pill .pn{font-size:15px;font-weight:600;text-anchor:middle;pointer-events:none}
+.pill .pv{font-size:28px;font-weight:700;text-anchor:middle;pointer-events:none}
+.bands{width:100%;border-collapse:collapse;font-size:13px}
+.bands td{padding:7px 18px;border-top:1px solid var(--line)}
+.bands td:first-child{width:44%}
+.bands i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:8px;vertical-align:-2px}
+.bands tr[data-on="true"] td{background:var(--brand-soft);font-weight:600}
+.adv2{display:grid;gap:8px;margin-bottom:14px}
+.adv2 div{background:var(--bg);border-radius:12px;padding:10px 14px;font-size:14px}
+.adv2 b{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.sechead{font-size:15px;font-weight:600;margin:0 0 10px}
+
+@media (max-width:980px){
+  .status{grid-template-columns:1fr}
+  .grid,.two{grid-template-columns:1fr}
+  .regions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .wrap{padding:14px 14px 32px}
+  .psi-main{flex-direction:column;align-items:flex-start}
+  .regions{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h12a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h8a3 3 0 1 1-3 3"/></svg>
+      </div>
+      <div>
+        <h1>Singapore haze monitor</h1>
+        <div class="sub" id="stamp"></div>
+      </div>
+    </div>
+    <span class="src">Source: National Environment Agency via data.gov.sg</span>
+  </header>
+
+  <section class="card status" id="status"></section>
+
+  <div class="grid">
+    <section class="card" aria-label="Air quality map">
+      <div class="map-head">
+        <h2>Current air quality</h2>
+        <div class="tabs" role="tablist" id="tabs" aria-label="Reading type"></div>
+      </div>
+      <div class="map-scroll">
+        <svg id="rmap" viewBox="20 0 1000 520" role="img" aria-label="Map of Singapore split into five NEA regions with air quality readings"></svg>
+      </div>
+      <table class="bands" id="bands"></table>
+      <div class="layer-note" style="padding-top:10px" id="rnote"></div>
+    </section>
+    <aside class="card pad detail" id="rdetail" aria-live="polite"></aside>
+  </div>
+
+  <div class="grid">
+    <section class="card" aria-label="Weather station map">
+      <div class="map-head">
+        <h2>Weather stations</h2>
+        <div class="chips" id="layers" role="group" aria-label="Weather layer"></div>
+      </div>
+      <div class="map-scroll">
+        <svg id="wmap" viewBox="0 0 1020 640" role="img" aria-label="Map of Singapore with NEA weather station readings"></svg>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="layer-note" id="layernote"></div>
+    </section>
+    <aside class="card pad detail" id="sdetail" aria-live="polite"></aside>
+  </div>
+
+  <div class="two">
+    <section class="card pad">
+      <h2>4 day outlook</h2>
+      <div id="fc"></div>
+    </section>
+    <section class="card pad">
+      <h2>NEA datasets used</h2>
+      <table class="srcs" id="srcs"></table>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="tbl-head"><h2>Haze readings by region</h2><span class="muted" style="font-size:13px">PSI is the 24 hour reading</span></div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Region</th><th>PSI</th><th>PM2.5 1 hour (µg/m³)</th><th>PM2.5 24 hour (µg/m³)</th><th>PM10 24 hour (µg/m³)</th><th>O3 8 hour max (µg/m³)</th><th>NO2 1 hour max (µg/m³)</th><th>SO2 24 hour (µg/m³)</th><th>CO 8 hour max (mg/m³)</th></tr></thead>
+          <tbody id="rrows"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <div class="tbl-head"><h2>Weather stations with temperature, humidity or wind</h2><span class="muted" style="font-size:13px" id="srow-note"></span></div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Station</th><th>Temperature (°C)</th><th>Humidity (%)</th><th>Wind speed (knots)</th><th>Wind direction</th><th>Rain, 5 min (mm)</th></tr></thead>
+          <tbody id="srows"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <p class="foot">All values are NEA readings from the data.gov.sg real-time API for Singapore, captured in a snapshot on 1 Nov 2026. A published page cannot call the API itself, so the numbers do not refresh until the page is republished. Each dataset has its own NEA reading time, shown above. National PSI is the highest of the five regional 24 hour readings.</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+
+/* ================= NEA data (data.gov.sg real-time API snapshot) ================= */
+const T={psi:'2026-10-31T20:00:00+08:00',psiUp:'2026-10-31T20:15:35+08:00',pm:'2026-10-31T23:00:00+08:00',pmUp:'2026-10-31T23:00:53+08:00',
+  temp:'2026-11-01T08:43:00+08:00',hum:'2026-10-31T20:08:00+08:00',ws:'2026-11-01T08:04:00+08:00',wd:'2026-10-31T19:03:00+08:00',rain:'2026-10-31T17:00:00+08:00',out:'2026-10-31T17:11:09+08:00'};
+
+/* key,name,lat,lon, psi, pm25_24h, pm25_sub, pm10_24h, pm10_sub, o3_8h, o3_sub, no2_1h, co_8h, co_sub, so2_24h, so2_sub, pm25_1h */
+const REG=[
+ ['north','North',1.41803,103.82, 61,21,61,37,37,73,31,22,1,9,5,3,29],
+ ['central','Central',1.35735,103.82, 65,24,65,42,42,53,22,40,1,8,2,1,39],
+ ['east','East',1.35735,103.94, 60,20,60,39,39,53,22,26,1,8,5,3,34],
+ ['west','West',1.35735,103.70, 77,35,77,50,50,58,24,37,1,5,5,3,44],
+ ['south','South',1.29587,103.82, 61,21,61,30,30,42,18,31,1,10,4,2,27]
+].map(a=>({key:a[0],name:a[1],lat:a[2],lon:a[3],psi:a[4],pm24:a[5],pm24s:a[6],pm10:a[7],pm10s:a[8],o3:a[9],o3s:a[10],no2:a[11],co:a[12],cos:a[13],so2:a[14],so2s:a[15],pm1:a[16]}));
+
+/* id|name|lat|lon (rainfall station list, which covers all NEA weather stations used here; every reading at T.rain was 0 mm) */
+const RAWST=`S218|Bukit Batok Street 34|1.36491|103.75065
+S219|Yio Chu Kang Road|1.37998|103.87639
+S216|Ang Mo Kio Avenue 10|1.36019|103.85335
+S217|Bishan Street 13|1.35028|103.855
+S214|Tanjong Rhu|1.29911|103.88289
+S215|Geylang East Central|1.31944|103.88194
+S213|Coronation Walk|1.32427|103.8097
+S80|Sembawang Meteorological Station|1.4247|103.8201
+S81|Punggol Central|1.4028|103.9095
+S40|Mandai Lake Road|1.4067|103.7832
+S84|Tampines Avenue 5|1.3443|103.9441
+S180|Taman Jurong Greens|1.33701|103.71828
+S44|Nanyang Avenue|1.3458|103.6817
+S88|Toa Payoh North|1.3417|103.8515
+S43|Kim Chuan Road|1.3406|103.8882
+S06|Paya Lebar Meteorological Station|1.357|103.904
+S100|Sungei Kadut Street 3|1.4172|103.74855
+S221|Hougang Avenue 1|1.35691|103.89088
+S222|Henderson Road|1.28987|103.82364
+S08|Lower Peirce Reservoir|1.37|103.8271
+S07|Macritchie Reservoir|1.3418|103.8339
+S187|Coronation Road|1.32251|103.80139
+S220|Compassvale Lane|1.38666|103.89797
+S184|Sengkang East Avenue|1.38256|103.89852
+S208|Changi East Close|1.31363|104.00317
+S129|Bedok Stadium|1.32575|103.93969
+S203|Pasir Panjang Road|1.29164|103.7702
+S127|Kallang Practice Track|1.30574|103.87817
+S201|Sunset Way|1.32319|103.76714
+S90|Bukit Timah Road|1.3191|103.8193
+S92|South Buona Vista Road|1.2841|103.7888
+S209|Yishun Ring Road|1.42111|103.84472
+S50|Clementi Road|1.3318|103.7762
+S210|Woodlands Centre Road|1.44003|103.76904
+S211|Kranji Road|1.42918|103.75711
+S132|Jurong West Stadium|1.33786|103.69538
+S119|Nicoll Highway|1.295|103.8622
+S117|Banyan Road (Jurong Island)|1.2542|103.6741
+S115|Tuas South Avenue 3|1.2938|103.6184
+S116|Pasir Panjang Terminal|1.2824|103.7545
+S113|Marine Parade Road|1.305|103.9112
+S114|Choa Chu Kang Avenue 4|1.3821|103.7381
+S60|Artillery Avenue (Sentosa)|1.2504|103.8275
+S64|Bukit Panjang Road|1.3823|103.7607
+S66|Kranji Reservoir|1.4387|103.736
+S24|Changi Meteorological Station|1.3678|103.9823
+S23|Tengah Meteorological Station|1.3858|103.7119
+S69|Upper Peirce Reservoir Park|1.3704|103.8046
+S123|Towner Road|1.3214|103.8577
+S120|Botanic Garden|1.3087|103.818
+S121|Old Choa Chu Kang Road|1.3738|103.7217
+S108|Marina Barrage|1.2799|103.8703
+S229|Jurong West Street 42|1.35167|103.72195
+S306|Murnane Service Reservoir|1.35085|103.78596
+S900|Seletar Meteorological Station|1.4114|103.8627
+S109|Ang Mo Kio Avenue 5|1.3793|103.85
+S307|Pulau Tekong Reservoir|1.41076|104.04156
+S106|Jalan Noordin (Pulau Ubin)|1.4168|103.9673
+S227|Woodlands Drive 62|1.43944|103.80389
+S228|Jurong West Street 73|1.34703|103.70073
+S305|Sarimbum Reservoir|1.4216|103.68127
+S104|Woodlands Avenue 9|1.4439|103.7854
+S148|Pasir Ris Walk|1.3715|103.9642
+S302|Tengeh Reservoir|1.33813|103.66303
+S226|Malan Road|1.27472|103.80389
+S303|Ponyan Reservoir|1.38375|103.65817
+S102|Semakau Island|1.1902|103.7657
+S223|Margaret Drive|1.29984|103.80264
+S300|Bedok Reservoir|1.34301|103.91971
+S224|Airport Boulevard|1.34394|103.98386
+S301|Neo Tiew Lane 2|1.41532|103.72871
+S908|Fernvale Lane|1.39027|103.87412
+S909|Seraya Road|1.30568|103.90093
+S907|Rivervale Drive|1.39316|103.87412
+S71|Kent Ridge Road|1.2923|103.7815
+S904|Holland Grove Road|1.31622|103.7837
+S905|Hillcrest Road|1.3308|103.8045
+S308|Seletar Reservoir|1.40158|103.80814
+S902|Yishun Walk|1.41457|103.83106
+S903|Lorong Kismis|1.33742|103.76699
+S33|Jurong Pier Road|1.3082|103.71
+S77|Alexandra Road|1.2937|103.8127
+S35|Old Toh Tuck Road|1.3325|103.755
+S79|Somerset Road|1.3003|103.8372
+S78|Poole Road|1.307|103.8907
+S111|Scotts Road|1.3106|103.8365
+S112|Lim Chu Kang Road|1.4388|103.7017
+S230|West Coast Road|1.30167|103.76444
+S199|Changi (wind station S199)|1.3678|103.9823`;
+const ST={};
+RAWST.split('\n').forEach(l=>{const p=l.split('|');ST[p[0]]={id:p[0],name:p[1],lat:+p[2],lon:+p[3],rain:null,temp:null,hum:null,ws:null,wd:null}});
+const RAIN_IDS=RAWST.split('\n').map(l=>l.split('|')[0]).filter(id=>id!=='S199');
+RAIN_IDS.forEach(id=>{ST[id].rain=0});
+const TEMP={S109:28.3,S106:27,S117:29.8,S104:29.1,S115:29.3,S116:29.6,S102:29.8,S80:29.3,S60:30,S50:29.1,S44:29.1,S43:28.7,S24:28.1,S23:28.7,S06:29.1,S111:29.1,S121:29.1};
+const HUM={S109:78.3,S106:88.7,S117:77.3,S104:78.3,S115:71.9,S116:73.4,S102:81.4,S80:91.8,S60:80.1,S50:79.7,S44:78.2,S43:76.3,S24:74.9,S23:81.3,S06:79.1,S111:80.9,S121:78.8};
+const WS={S108:1.9,S109:1,S106:2.2,S117:1,S104:1.8,S115:0.6,S116:1.8,S102:6,S60:1.4,S44:1.5,S43:1.9,S23:1.7,S06:2.2,S111:1.4,S199:1.8,S121:1.5};
+const WD={S108:107,S109:88,S106:80,S117:99,S104:98,S115:99,S116:112,S102:56,S60:78,S44:105,S43:67,S23:72,S06:45,S111:49,S199:94,S121:42};
+Object.keys(TEMP).forEach(k=>ST[k].temp=TEMP[k]);
+Object.keys(HUM).forEach(k=>ST[k].hum=HUM[k]);
+Object.keys(WS).forEach(k=>ST[k].ws=WS[k]);
+Object.keys(WD).forEach(k=>ST[k].wd=WD[k]);
+const STATIONS=Object.keys(ST).map(k=>ST[k]);
+
+/* 4 day outlook as published by NEA (wind speed in km/h) */
+const OUTLOOK=[
+ {ts:'2026-11-01',day:'Sunday',text:'Thundery Showers',summary:'Afternoon thundery showers',rh:[60,90],t:[26,35],wd:'SE',ws:[5,15]},
+ {ts:'2026-11-02',day:'Monday',text:'Thundery Showers',summary:'Afternoon thundery showers',rh:[60,95],t:[25,34],wd:'SE',ws:[5,15]},
+ {ts:'2026-11-03',day:'Tuesday',text:'Thundery Showers',summary:'Afternoon thundery showers',rh:[60,95],t:[25,33],wd:'Variable',ws:[5,15]},
+ {ts:'2026-11-04',day:'Wednesday',text:'Thundery Showers',summary:'Afternoon thundery showers',rh:[60,95],t:[25,33],wd:'ESE',ws:[5,15]}
+];
+
+/* ================= scales ================= */
+const BANDS=[
+  {max:50,name:'Good',c:'#2A8F54',fg:'#fff',rng:'0 to 50',adv:'Normal activities are fine for everyone.'},
+  {max:100,name:'Moderate',c:'#2F7FC9',fg:'#fff',rng:'51 to 100',adv:'Healthy persons, older adults, pregnant women, children and people with chronic lung or heart disease can continue normal activities.'},
+  {max:200,name:'Unhealthy',c:'#F2A33A',fg:'#2a1500',rng:'101 to 200',adv:'Reduce prolonged or strenuous outdoor activity. Children, older adults and people with heart or lung conditions should minimise outdoor exposure.'},
+  {max:300,name:'Very unhealthy',c:'#D1402B',fg:'#fff',rng:'201 to 300',adv:'Avoid prolonged or strenuous outdoor activity and stay indoors where possible. Wear an N95 mask if you must go outside.'},
+  {max:9999,name:'Hazardous',c:'#8E2457',fg:'#fff',rng:'301 and above',adv:'Avoid all outdoor activity. Stay indoors with windows closed.'}
+];
+const band=p=>BANDS.find(b=>p<=b.max);
+const PMB=[
+  {max:55,name:'Band 1 (Normal)',c:'#2A8F54',fg:'#fff',rng:'0 to 55',h:'CONTINUE with normal activities.',v:'CONTINUE with normal activities.'},
+  {max:150,name:'Band 2 (Elevated)',c:'#F2A33A',fg:'#2a1500',rng:'56 to 150',h:'REDUCE strenuous outdoor activities for the next hour.',v:'AVOID strenuous outdoor activities for the next hour.'},
+  {max:250,name:'Band 3 (High)',c:'#D1402B',fg:'#fff',rng:'151 to 250',h:'AVOID strenuous outdoor activities for the next hour.',v:'AVOID all outdoor activities for the next hour. You may wear a mask to reduce exposure.'},
+  {max:99999,name:'Band 4 (Very High)',c:'#8E2457',fg:'#fff',rng:'251 and above',h:'MINIMISE all outdoor activities for the next hour. You may wear a mask to reduce exposure.',v:'AVOID all outdoor activities for the next hour. You may wear a mask to reduce exposure.'}
+];
+const pmBand=v=>PMB.find(b=>v<=b.max);
+const scale=stops=>v=>{const s=stops.find(x=>v<=x[0])||stops[stops.length-1];return {c:s[1],fg:s[2]}};
+
+/* NEA style regional tabs */
+const TABS={
+  psi:{label:'24-hr PSI',val:r=>r.psi,band:band,ts:T.psi,bands:BANDS,unit:'',note:'24 hour PSI by region.'},
+  pm25:{label:'1-hr PM2.5',val:r=>r.pm1,band:pmBand,ts:T.pm,bands:PMB,unit:'µg/m³',note:'1 hour PM2.5 concentration by region, in µg/m³.'}
+};
+
+/* weather station layers */
+const LAYERS={
+  temp:{label:'Temperature',get:s=>s.temp,fmt:v=>v.toFixed(1),ts:T.temp,
+    color:scale([[28,'#5BB3D6','#06202b'],[29,'#8BD17C','#0f2a08'],[30,'#F2C14E','#2a1d00'],[32,'#F2A33A','#2a1500'],[99,'#D1402B','#fff']]),
+    legend:[['#5BB3D6','','28 or less'],['#8BD17C','','28.1 to 29'],['#F2C14E','','29.1 to 30'],['#F2A33A','','30.1 to 32'],['#D1402B','','Above 32']],unit:'°C',
+    title:'Air temperature',note:'Station readings from NEA, in °C.'},
+  hum:{label:'Humidity',get:s=>s.hum,fmt:v=>String(Math.round(v)),ts:T.hum,
+    color:scale([[75,'#EAF4D8','#2c3a12'],[80,'#B7E0C8','#12301f'],[85,'#6CC3B0','#08302a'],[100,'#2E9AA8','#fff']]),
+    legend:[['#EAF4D8','','75 or less'],['#B7E0C8','','75.1 to 80'],['#6CC3B0','','80.1 to 85'],['#2E9AA8','','Above 85']],unit:'%',
+    title:'Relative humidity',note:'Station readings from NEA, in percent.'},
+  wind:{label:'Wind',get:s=>s.ws,fmt:v=>v.toFixed(1),ts:T.ws,
+    color:scale([[1,'#DDE7E1','#33433a'],[2,'#A9D6E8','#0a2633'],[4,'#5DAAD6','#fff'],[99,'#2F6FB0','#fff']]),
+    legend:[['#DDE7E1','','1 or less'],['#A9D6E8','','1.1 to 2'],['#5DAAD6','','2.1 to 4'],['#2F6FB0','','Above 4']],unit:'knots',
+    title:'Wind speed',note:'Speed in knots. Arrows show the direction the wind blows towards, from the NEA direction reading taken at a different time (see datasets below).'},
+  rain:{label:'Rainfall',get:s=>s.rain,fmt:v=>v.toFixed(1),ts:T.rain,small:true,
+    color:scale([[0.05,'#DDE7E1','#33433a'],[2,'#9CCBEA','#082033'],[10,'#4D8FD6','#fff'],[999,'#3B4DB5','#fff']]),
+    legend:[['#C5D3CA','','Dry, 0'],['#9CCBEA','','Up to 2'],['#4D8FD6','','Up to 10'],['#3B4DB5','','Above 10']],unit:'mm',
+    title:'Rainfall, 5 minute total',note:'Every NEA rain gauge ('+RAIN_IDS.length+') read 0 mm at this time.'}
+};
+
+/* ================= geometry (lon, lat projected to the SVG) ================= */
+const X=lon=>(lon-103.58)*2000, Y=lat=>(1.48-lat)*2000;
+const path=pts=>'M'+pts.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' L')+' Z';
+const MAIN=[[103.605,1.300],[103.615,1.330],[103.635,1.345],[103.645,1.385],[103.665,1.415],[103.695,1.445],[103.72,1.452],[103.745,1.457],[103.77,1.462],[103.80,1.468],[103.83,1.465],[103.86,1.452],[103.895,1.428],[103.915,1.418],[103.94,1.395],[103.97,1.385],[104.0,1.385],[104.02,1.375],[104.035,1.35],[104.04,1.325],[104.02,1.305],[103.995,1.28],[103.96,1.30],[103.94,1.305],[103.91,1.29],[103.885,1.28],[103.87,1.265],[103.84,1.26],[103.81,1.255],[103.785,1.26],[103.76,1.265],[103.74,1.275],[103.71,1.29],[103.685,1.30],[103.66,1.285],[103.64,1.265],[103.615,1.275]];
+const ISLETS=[
+ [[103.66,1.265],[103.695,1.28],[103.72,1.265],[103.705,1.245],[103.67,1.238],[103.65,1.252]],
+ [[103.80,1.252],[103.835,1.255],[103.855,1.245],[103.83,1.238],[103.805,1.243]],
+ [[103.93,1.415],[103.96,1.428],[103.995,1.426],[104.0,1.41],[103.97,1.402],[103.94,1.403]],
+ [[104.02,1.405],[104.05,1.42],[104.075,1.41],[104.065,1.39],[104.035,1.39]],
+ [[103.755,1.195],[103.78,1.198],[103.785,1.185],[103.76,1.18]]
+];
+/* illustrative region divisions, central is the base colour */
+const PART=[
+ ['north',[[103.72,1.5],[103.72,1.395],[103.9,1.395],[103.9,1.5]]],
+ ['south',[[103.755,1.1],[103.755,1.31],[103.9,1.31],[103.9,1.1]]],
+ ['west',[[103.5,1.1],[103.755,1.1],[103.755,1.375],[103.72,1.395],[103.72,1.5],[103.5,1.5]]],
+ ['east',[[103.9,1.5],[103.9,1.27],[104.2,1.27],[104.2,1.5]]]
+];
+const PILL={north:[480,124],central:[480,246],east:[730,236],west:[235,236],south:[480,356]};
+
+/* ================= helpers ================= */
+const state={tab:'psi',rsel:'west',layer:'temp',ssel:'S109'};
+const compass=d=>['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16];
+const fmtT=iso=>new Intl.DateTimeFormat('en-SG',{timeZone:'Asia/Singapore',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(iso))+' SGT';
+const fmtD=iso=>new Intl.DateTimeFormat('en-SG',{timeZone:'Asia/Singapore',weekday:'short',day:'numeric',month:'short'}).format(new Date(iso+'T12:00:00+08:00'));
+const range=(a,d)=>{const v=a.filter(x=>x!==null&&x!==undefined);return [Math.min.apply(null,v),Math.max.apply(null,v)].map(x=>+x.toFixed(d))};
+const REGBY={};REG.forEach(r=>REGBY[r.key]=r);
+
+const CLOUD='<path d="M6.5 18a4 4 0 0 1-.4-7.98 5.5 5.5 0 0 1 10.6-1.1A4.5 4.5 0 0 1 17.5 18z"/>';
+const ICON_TH='<g transform="translate(0 -3)">'+CLOUD+'</g><path d="M12.5 15.5l-2.5 3.5h3.5l-2.5 3.5"/>';
+const icon=()=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON_TH+'</svg>';
+
+/* ================= render ================= */
+function natPsi(){return REG.slice().sort((a,b)=>b.psi-a.psi)[0]}
+function domPollutant(r){
+  const c=[['PM2.5',r.pm24s],['PM10',r.pm10s],['ozone',r.o3s],['carbon monoxide',r.cos],['sulphur dioxide',r.so2s]].sort((a,b)=>b[1]-a[1]);
+  return c[0][0];
+}
+function stat(k,v,u){return '<div class="stat"><div class="k">'+k+'</div><div class="v">'+v+' <span class="u">'+u+'</span></div></div>'}
+function renderStatus(){
+  const n=natPsi(), b=band(n.psi);
+  const pm=range(REG.map(r=>r.pm1),0), t=range(STATIONS.map(s=>s.temp),1), h=range(STATIONS.map(s=>s.hum),1), w=range(STATIONS.map(s=>s.ws),1);
+  const mx=Math.max.apply(null,STATIONS.map(s=>s.rain===null?0:s.rain));
+  const rc=STATIONS.filter(s=>s.rain!==null).length;
+  $('#stamp').textContent='PSI reading '+fmtT(T.psi);
+  $('#status').innerHTML=
+   '<div class="psi-main"><div class="ring-big" style="background:'+b.c+';color:'+b.fg+'">'+n.psi+'</div>'+
+   '<div><h2>National PSI is '+b.name.toLowerCase()+'</h2><p>'+b.adv+'</p>'+
+   '<div class="meta muted">Highest regional 24 hour PSI is in the '+n.name+', driven mainly by '+domPollutant(n)+'.</div></div></div>'+
+   '<div class="stats">'+
+   stat('PM2.5, 1 hour',pm[0]+' to '+pm[1],'µg/m³')+
+   stat('Temperature',t[0]+' to '+t[1],'°C')+
+   stat('Humidity',h[0]+' to '+h[1],'%')+
+   stat('Wind speed',w[0]+' to '+w[1],'knots')+
+   stat('Rain, 5 min',mx===0?'None':mx+' max',mx===0?'at '+rc+' gauges':'mm')+
+   '</div>';
+}
+
+/* ----- NEA style regional map ----- */
+function renderTabs(){
+  $('#tabs').innerHTML=Object.keys(TABS).map(k=>'<button type="button" class="tab" role="tab" data-tab="'+k+'" aria-selected="'+(k===state.tab)+'">'+TABS[k].label+'</button>').join('');
+}
+function renderRegionMap(){
+  const L=TABS[state.tab];
+  const col=r=>L.band(L.val(r));
+  const fillFor=r=>{const b=col(r);return '<path d="" />'};
+  const union=path(MAIN)+' '+ISLETS.map(path).join(' ');
+  let svg='<defs><clipPath id="isl"><path d="'+union+'"/></clipPath></defs>';
+  const central=REGBY.central, cb=col(central);
+  const op=r=>r.key===state.rsel?.62:.34;
+  svg+='<g clip-path="url(#isl)">';
+  svg+='<rect x="0" y="0" width="1100" height="700" fill="'+cb.c+'" opacity="'+op(central)+'"/>';
+  PART.forEach(p=>{
+    const r=REGBY[p[0]], b=col(r);
+    svg+='<path d="'+path(p[1])+'" fill="'+b.c+'" fill-opacity="'+op(r)+'" stroke="var(--surface)" stroke-width="3.5" stroke-linejoin="round"/>';
+  });
+  svg+='</g>';
+  svg+='<path d="'+path(MAIN)+'" fill="none" stroke="var(--island-line)" stroke-width="2" stroke-linejoin="round"/>';
+  ISLETS.slice(0,4).forEach(p=>{svg+='<path d="'+path(p)+'" fill="none" stroke="var(--island-line)" stroke-width="1.5"/>'});
+  svg+=REG.slice().sort((a,b)=>(a.key===state.rsel)-(b.key===state.rsel)).map(r=>{
+    const b=col(r), pos=PILL[r.key], sel=r.key===state.rsel;
+    return '<g class="pill" data-region="'+r.key+'" transform="translate('+pos[0]+' '+pos[1]+')" tabindex="0" role="button" aria-label="'+r.name+' region, '+L.label+' '+L.val(r)+' '+L.unit+', '+b.name+'">'+
+      '<rect x="-58" y="-34" width="116" height="68" rx="16" fill="'+b.c+'" stroke="'+(sel?'var(--ink)':'var(--surface)')+'" stroke-width="'+(sel?4:3)+'"/>'+
+      '<text class="pn" y="-10" fill="'+b.fg+'">'+r.name+'</text>'+
+      '<text class="pv" y="20" fill="'+b.fg+'">'+L.val(r)+'</text></g>';
+  }).join('');
+  $('#rmap').innerHTML=svg;
+  const cur=L.band(L.val(REGBY[state.rsel]));
+  $('#bands').innerHTML=L.bands.map(b=>'<tr data-on="'+(b===cur)+'"><td><i style="background:'+b.c+'"></i>'+b.name+'</td><td>'+b.rng+(L.unit?' '+L.unit:'')+'</td></tr>').join('');
+  $('#rnote').textContent=L.note+' NEA reading time: '+fmtT(L.ts)+'. Regions are NEA’s five regions. The map is illustrative and not to scale.';
+}
+function m(k,v,u,s){return '<div class="m"><div class="k">'+k+'</div><div class="v">'+v+' <span class="u">'+u+'</span></div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>'}
+function renderRegionDetail(){
+  const r=REGBY[state.rsel], pb=pmBand(r.pm1), b=band(r.psi);
+  const psiTab=state.tab==='psi';
+  const top=psiTab
+    ?'<div class="detail-top"><div class="big">'+r.psi+'</div><div><span class="badge" style="background:'+b.c+';color:'+b.fg+'">'+b.name+'</span><div class="muted" style="font-size:13px;margin-top:6px">24 hour PSI</div></div></div><div class="advice">'+b.adv+'</div>'
+    :'<div class="detail-top"><div class="big">'+r.pm1+'</div><div><span class="badge" style="background:'+pb.c+';color:'+pb.fg+'">'+pb.name+'</span><div class="muted" style="font-size:13px;margin-top:6px">1 hour PM2.5, µg/m³</div></div></div>'+
+      '<div class="adv2"><div><b>Healthy persons</b>'+pb.h+'</div><div><b>Vulnerable persons</b>'+pb.v+'</div></div>';
+  $('#rdetail').innerHTML=
+   '<div class="where">NEA region</div><h2>'+r.name+'</h2>'+top+
+   '<div class="mgrid">'+
+   m('24 hour PSI',r.psi,'',b.name)+
+   m('PM2.5, 1 hour',r.pm1,'µg/m³',pb.name)+
+   m('PM2.5, 24 hour',r.pm24,'µg/m³','PSI sub-index '+r.pm24s)+
+   m('PM10, 24 hour',r.pm10,'µg/m³','PSI sub-index '+r.pm10s)+
+   m('Ozone, 8 hour max',r.o3,'µg/m³','PSI sub-index '+r.o3s)+
+   m('NO2, 1 hour max',r.no2,'µg/m³','')+
+   m('SO2, 24 hour',r.so2,'µg/m³','PSI sub-index '+r.so2s)+
+   m('CO, 8 hour max',r.co,'mg/m³','PSI sub-index '+r.cos)+
+   '</div>'+
+   '<div class="fine">PSI reading '+fmtT(T.psi)+'. 1 hour PM2.5 reading '+fmtT(T.pm)+'.</div>';
+}
+
+/* ----- weather station map ----- */
+function renderLayers(){
+  $('#layers').innerHTML=Object.keys(LAYERS).map(k=>'<button type="button" class="chip" data-layer="'+k+'" aria-pressed="'+(k===state.layer)+'">'+LAYERS[k].label+'</button>').join('');
+}
+function renderWeatherMap(){
+  const L=LAYERS[state.layer];
+  const items=STATIONS.filter(s=>L.get(s)!==null);
+  let shapes='';
+  ISLETS.forEach(p=>{shapes+='<path d="'+path(p)+'" fill="var(--island)" stroke="var(--island-line)" stroke-width="1.5"/>'});
+  shapes+='<path d="'+path(MAIN)+'" fill="var(--island)" stroke="var(--island-line)" stroke-width="2" stroke-linejoin="round"/>';
+  const order=items.slice().sort((a,b)=>(a.id===state.ssel)-(b.id===state.ssel));
+  $('#wmap').innerHTML=shapes+order.map(it=>marker(it,L)).join('');
+  $('#legend').innerHTML='<b>'+L.title+' ('+L.unit+')</b>'+L.legend.map(l=>'<span><i style="background:'+l[0]+'"></i>'+(l[1]?l[1]+' ':'')+l[2]+'</span>').join('');
+  $('#layernote').textContent=L.note+' NEA reading time: '+fmtT(L.ts)+'.';
+}
+function marker(it,L){
+  const v=L.get(it), col=L.color(v), sel=it.id===state.ssel;
+  const r=L.small?8:19;
+  let extra='';
+  if(state.layer==='wind'&&it.wd!==null){extra='<g transform="rotate('+((it.wd+180)%360)+')"><path d="M0,-'+(r+14)+' L7,-'+(r+4)+' L-7,-'+(r+4)+' Z" fill="'+col.c+'" stroke="var(--ink)" stroke-width="1"/></g>'}
+  return '<g class="mk" data-id="'+it.id+'" transform="translate('+X(it.lon)+' '+Y(it.lat)+')" tabindex="0" role="button" aria-label="'+it.name+', '+L.label+' '+L.fmt(v)+' '+L.unit+'">'+
+    (sel?'<circle r="'+(r+8)+'" class="ring"/>':'')+extra+
+    '<circle r="'+r+'" class="dot" fill="'+col.c+'"/>'+
+    (L.small?'':'<text class="val" fill="'+col.fg+'" y="5" font-size="14">'+L.fmt(v)+'</text>')+
+    (sel?'<text class="nm" y="'+(r+22)+'" font-size="15">'+it.name+'</text>':'')+
+    '<title>'+it.name+': '+L.fmt(v)+' '+L.unit+'</title></g>';
+}
+function renderStationDetail(){
+  const s=ST[state.ssel];
+  const dv=(v,f,u,ts,d)=>v===null?m(f,'No reading','',''):m(f,d===undefined?v:v.toFixed(d),u,fmtT(ts));
+  $('#sdetail').innerHTML=
+   '<div class="where">NEA weather station '+s.id+'</div><h2>'+s.name+'</h2>'+
+   '<div class="muted" style="font-size:13px;margin:6px 0 14px">'+s.lat.toFixed(4)+' N, '+s.lon.toFixed(4)+' E</div>'+
+   '<div class="mgrid">'+
+   dv(s.temp,'Temperature','°C',T.temp,1)+
+   dv(s.hum,'Humidity','%',T.hum,1)+
+   dv(s.ws,'Wind speed','knots',T.ws,1)+
+   (s.wd===null?m('Wind direction','No reading','',''):m('Wind direction','From '+compass(s.wd),'('+s.wd+'°)',fmtT(T.wd)))+
+   dv(s.rain,'Rain, 5 min','mm',T.rain,1)+
+   '</div>'+
+   '<div class="fine">Haze readings are published by NEA per region, not per weather station.</div>';
+}
+
+function renderOutlook(){
+  $('#fc').innerHTML=OUTLOOK.map(f=>
+    '<div class="fc-row"><div class="fc-d">'+fmtD(f.ts)+'</div>'+icon()+
+    '<div><div>'+f.summary+'</div><div class="fc-s">'+f.t[0]+' to '+f.t[1]+' °C, humidity '+f.rh[0]+' to '+f.rh[1]+'%, wind '+f.wd+' '+f.ws[0]+' to '+f.ws[1]+' km/h</div></div></div>'
+  ).join('')+'<div class="fine">Published by NEA '+fmtT(T.out)+'.</div>';
+}
+function renderSources(){
+  const rows=[['PSI and pollutants (24 hour, by region)',T.psi],['PM2.5 (1 hour, by region)',T.pm],['Air temperature',T.temp],['Relative humidity',T.hum],['Wind speed',T.ws],['Wind direction',T.wd],['Rainfall (5 minute total)',T.rain],['4 day outlook',T.out]];
+  $('#srcs').innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+fmtT(r[1])+'</td></tr>').join('');
+}
+function renderTables(){
+  $('#rrows').innerHTML=REG.slice().sort((a,b)=>b.psi-a.psi).map(r=>{
+    const b=band(r.psi), sel=state.rsel===r.key;
+    return '<tr aria-selected="'+sel+'"><td><button type="button" data-region="'+r.key+'">'+r.name+'</button></td>'+
+      '<td><span class="dotc" style="background:'+b.c+';margin-right:8px"></span>'+r.psi+'</td><td>'+r.pm1+'</td><td>'+r.pm24+'</td><td>'+r.pm10+'</td><td>'+r.o3+'</td><td>'+r.no2+'</td><td>'+r.so2+'</td><td>'+r.co+'</td></tr>';
+  }).join('');
+  const list=STATIONS.filter(s=>s.temp!==null||s.hum!==null||s.ws!==null||s.wd!==null);
+  $('#srow-note').textContent=list.length+' stations. Rain gauges without other sensors are on the Rainfall layer.';
+  $('#srows').innerHTML=list.map(s=>{
+    const sel=state.ssel===s.id;
+    const f=(v,d)=>v===null?'No reading':(d?v.toFixed(d):v);
+    return '<tr aria-selected="'+sel+'"><td><button type="button" data-st="'+s.id+'">'+s.name+'</button></td><td>'+f(s.temp,1)+'</td><td>'+f(s.hum,1)+'</td><td>'+f(s.ws,1)+'</td><td>'+(s.wd===null?'No reading':compass(s.wd)+' ('+s.wd+'°)')+'</td><td>'+(s.rain===null?'No reading':s.rain.toFixed(1))+'</td></tr>';
+  }).join('');
+}
+function renderAll(){renderStatus();renderTabs();renderRegionMap();renderRegionDetail();renderLayers();renderWeatherMap();renderStationDetail();renderOutlook();renderSources();renderTables()}
+function selRegion(k){state.rsel=k;renderRegionMap();renderRegionDetail();renderTables()}
+function selStation(id){state.ssel=id;renderWeatherMap();renderStationDetail();renderTables()}
+
+/* ================= events ================= */
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;state.tab=b.dataset.tab;renderTabs();renderRegionMap();renderRegionDetail()});
+$('#rmap').addEventListener('click',e=>{const g=e.target.closest('[data-region]');if(g)selRegion(g.dataset.region)});
+$('#rmap').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const g=e.target.closest('[data-region]');if(!g)return;e.preventDefault();
+  const k=g.dataset.region;selRegion(k);
+  const n=document.querySelector('#rmap [data-region="'+k+'"]');if(n)n.focus();
+});
+$('#layers').addEventListener('click',e=>{const b=e.target.closest('[data-layer]');if(!b)return;state.layer=b.dataset.layer;renderLayers();renderWeatherMap()});
+$('#wmap').addEventListener('click',e=>{const g=e.target.closest('[data-id]');if(g)selStation(g.dataset.id)});
+$('#wmap').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const g=e.target.closest('[data-id]');if(!g)return;e.preventDefault();
+  const id=g.dataset.id;selStation(id);
+  const n=document.querySelector('#wmap [data-id="'+id+'"]');if(n)n.focus();
+});
+$('#rrows').addEventListener('click',e=>{const b=e.target.closest('[data-region]');if(b)selRegion(b.dataset.region)});
+$('#srows').addEventListener('click',e=>{const b=e.target.closest('[data-st]');if(b)selStation(b.dataset.st)});
+
+renderAll();
+})();
+</script>
+</body>
+</html>
